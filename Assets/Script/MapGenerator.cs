@@ -1,7 +1,7 @@
 using UnityEngine;
-using Unity.Mathematics; // 패키지 매니저에서 Mathematics 설치 필요
+using Unity.Mathematics;
 
-public class FlyweightPattern : MonoBehaviour
+public class MapGenerator : MonoBehaviour
 {
     TileData[,] testData;
     SpriteRenderer[,] tileObjects;
@@ -15,38 +15,40 @@ public class FlyweightPattern : MonoBehaviour
         tileObjects = new SpriteRenderer[chunkSize * size.x, chunkSize * size.y];
 
         for (int i = 0; i < size.x; i++)
+        {
+            for (int j = 0; j < size.y; j++)
             {
-                for (int j = 0; j < size.y; j++)
-                {
-                    testData = GenerateChunkData(new Vector2Int(i, j));
-                }
+                testData = GenerateChunkData(new Vector2Int(i, j));
             }
+        }
     }
 
     void Update()
     {
         for (int i = 0; i < size.x; i++)
+        {
+            for (int j = 0; j < size.y; j++)
             {
-                for (int j = 0; j < size.y; j++)
-                {
-                    ReColor(new Vector2Int(i, j));
-                }
+                ReColor(new Vector2Int(i, j));
             }
+        }
 
-        if(Input.GetKeyDown(KeyCode.Q)) noiseScale += 10f;
-        if(Input.GetKeyDown(KeyCode.W)) noiseScale -= 10f;
+        if (Input.GetKeyDown(KeyCode.Q)) noiseScale += 10f;
+        if (Input.GetKeyDown(KeyCode.W)) noiseScale -= 10f;
 
-        if(Input.GetKeyDown(KeyCode.E)) noiseOctaves += 1;
-        if(Input.GetKeyDown(KeyCode.R)) noiseOctaves -= 1;
+        if (Input.GetKeyDown(KeyCode.E)) noiseOctaves += 1;
+        if (Input.GetKeyDown(KeyCode.R)) noiseOctaves -= 1;
 
-        if(Input.GetKeyDown(KeyCode.T)) noisePersistence += 0.1f;
-        if(Input.GetKeyDown(KeyCode.Y)) noisePersistence -= 0.1f;
+        if (Input.GetKeyDown(KeyCode.T)) noisePersistence += 0.1f;
+        if (Input.GetKeyDown(KeyCode.Y)) noisePersistence -= 0.1f;
 
-        if(Input.GetKeyDown(KeyCode.U)) noiseLacunarity += 0.5f;
-        if(Input.GetKeyDown(KeyCode.I)) noiseLacunarity -= 0.5f;
+        if (Input.GetKeyDown(KeyCode.U)) noiseLacunarity += 0.5f;
+        if (Input.GetKeyDown(KeyCode.I)) noiseLacunarity -= 0.5f;
 
-        if(Input.GetKeyDown(KeyCode.Space)) mapSeed = UnityEngine.Random.Range(0f, 99999f);
+        if (Input.GetKeyDown(KeyCode.Space)) mapSeed = UnityEngine.Random.Range(0f, 99999f);
     }
+    [Header("Terrain Settings")]
+    public float terrainScale = 50f;
 
     public float noiseScale = 50f;
     public int noiseOctaves = 4;
@@ -55,6 +57,15 @@ public class FlyweightPattern : MonoBehaviour
     public float mapSeed = 12345f; // 랜덤 시드
 
     public int chunkSize = 16;
+
+
+    [Header("Ore Settings")]
+    public float oreScale = 20f; // 자원 군락의 크기와 분포 간격 (작을수록 군락이 많아짐)
+    public float oreThreshold = 0.6f; // 이 수치 이상일 때만 자원으로 인정 (높을수록 군락이 작아짐)
+
+    // 심플렉스를 섞어서 테두리를 깎아낼 때 쓰는 변수
+    public float oreNoiseBlend = 0.5f;
+
 
     void ReColor(Vector2Int chunkCoordinate)
     {
@@ -71,8 +82,10 @@ public class FlyweightPattern : MonoBehaviour
                 float currentHeight = NoiseGenerator.GenerateFbmNoise
                 (worldX, worldY, noiseScale, noiseOctaves, noisePersistence, noiseLacunarity, mapSeed);
 
-                // 노이즈 값에 따라 지형 결정
                 TerrainType currentTerrain = DetermineTerrainType(currentHeight);
+                float oreDensity = ResourceGenerator.GenerateCellularNoise(worldX, worldY, oreScale, mapSeed);
+                float edgeNoise = noise.snoise(new float2(worldX / 10f, worldY / 10f)) * 0.5f + 0.5f;
+                float finalOreValue = oreDensity * Mathf.Lerp(1f, edgeNoise, oreNoiseBlend);
 
                 tileObjects[(int)worldX, (int)worldY].color = currentTerrain switch
                 {
@@ -83,6 +96,14 @@ public class FlyweightPattern : MonoBehaviour
                     TerrainType.Forest => Color.green,
                     _ => throw new System.NotImplementedException()
                 };
+
+                if (currentHeight > 0.45f) // 평지나 숲인 경우에만 자원 생성
+                {
+                    if (finalOreValue > oreThreshold)
+                    {
+                        tileObjects[(int)worldX, (int)worldY].color = Color.red; // 자원이 있는 타일은 빨간색으로 표시 (테스트용)
+                    }
+                }
             }
         }
     }
@@ -108,6 +129,15 @@ public class FlyweightPattern : MonoBehaviour
                 float currentHeight = NoiseGenerator.GenerateFbmNoise
                 (worldX, worldY, noiseScale, noiseOctaves, noisePersistence, noiseLacunarity, mapSeed);
 
+                //자원 군락 밀집도
+                float oreDensity = ResourceGenerator.GenerateCellularNoise(worldX, worldY, oreScale, mapSeed);
+
+                //자원 군락 테두리 거칠게 깎기
+                float edgeNoise = noise.snoise(new float2(worldX / 10f, worldY / 10f)) * 0.5f + 0.5f;
+
+                // 최종 자원 수치 = 셀룰러 덩어리 * 심플렉스 깎아내기 * 블렌드 가중치
+                float finalOreValue = oreDensity * Mathf.Lerp(1f, edgeNoise, oreNoiseBlend);
+
                 // 노이즈 값에 따라 지형 결정
                 TerrainType currentTerrain = DetermineTerrainType(currentHeight);
 
@@ -118,7 +148,7 @@ public class FlyweightPattern : MonoBehaviour
                     heightValue = currentHeight
                 };
                 //Debug.Log($"Tile at ({x}, {y}): {currentTerrain}, Height: {currentHeight} / World Pos: ({worldX}, {worldY})");
-                    
+
                 if (tileObjects[(int)worldX, (int)worldY] == null)
                 {
                     tileObjects[(int)worldX, (int)worldY] = Instantiate(testSand, new Vector3(worldX, worldY, 0), Quaternion.identity, this.transform).GetComponent<SpriteRenderer>();
@@ -134,6 +164,13 @@ public class FlyweightPattern : MonoBehaviour
                     _ => throw new System.NotImplementedException()
                 };
 
+                if (currentHeight > 0.45f) // 평지나 숲인 경우에만 자원 생성
+                {
+                    if (finalOreValue > oreThreshold)
+                    {
+                        tileObjects[(int)worldX, (int)worldY].color = Color.red; // 자원이 있는 타일은 빨간색으로 표시 (테스트용)
+                    }
+                }
             }
         }
 
@@ -151,24 +188,6 @@ public class FlyweightPattern : MonoBehaviour
     }
 }
 
-// 타일의 종류를 정의
-public enum TerrainType
-{
-    DeepWater,
-    ShallowWater,
-    Sand,
-    Grass,
-    Forest
-}
-
-// 가벼운 데이터 구조체 (Flyweight)
-public struct TileData
-{
-    public TerrainType terrain;
-    public float heightValue; // 노이즈 결과값 (디버깅용 또는 부가 로직용)
-    public GameObject testObj;
-    // 향후 oreType (자원 종류) 등이 추가될 수 있음
-}
 
 public static class NoiseGenerator
 {
@@ -266,4 +285,27 @@ public class ChunkGenerator
     //     if (noiseHeight < 0.75f) return TerrainType.Grass;
     //     return TerrainType.Forest;
     // }
+}
+
+public static class ResourceGenerator
+{
+    // 셀룰러 노이즈로 자원의 밀집도(0 ~ 1)를 반환하는 함수
+    public static float GenerateCellularNoise(float xPosition, float yPosition, float scale, float seedOffset)
+    {
+        // 0으로 나누기 방지
+        if (scale <= 0) scale = 0.0001f;
+
+        float2 samplePosition = new(xPosition / scale + seedOffset, yPosition / scale + seedOffset);
+
+        // noise.cellular는 float2를 반환합니다. 
+        // x값: 가장 가까운 점까지의 거리 (F1)
+        // y값: 두 번째로 가까운 점까지의 거리 (F2)
+        float2 cellularResult = noise.cellular(samplePosition);
+
+        // 중심점에 가까울수록 거리가 0이 나오므로, 값을 반전시켜 중심이 1(가장 진함)이 되도록 합니다.
+        float invertedDistance = 1f - cellularResult.x;
+
+        // 0 ~ 1 사이의 값으로 보정 (math.saturate는 Mathf.Clamp01과 동일)
+        return math.saturate(invertedDistance);
+    }
 }
