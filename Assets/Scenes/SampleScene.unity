@@ -449,14 +449,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   testWater: {fileID: 7348611945995977638, guid: 2703d667e15c11f4386eaed91b2df28a, type: 3}
-  testSand: {fileID: 6959237267639690489, guid: 0829d1daf85be6040bd62170ca81db05, type: 3}
-  size: {x: 7, y: 7}
+  testSand: {fileID: 8088130748687789191, guid: ed0ea858a76129a4da6a5cb4ca1272a6, type: 3}
+  size: {x: 5, y: 5}
+  curPos: {x: 0, y: 0}
   terrainScale: 50
   noiseScale: 50
   noiseOctaves: 4
   noisePersistence: 0.5
   noiseLacunarity: 2
-  mapSeed: 54321
+  mapSeed: 12345
   chunkSize: 16
   oreScale: 20
   oreThreshold: 0.6

@@ -1,37 +1,36 @@
 using UnityEngine;
 using Unity.Mathematics;
+using System.Collections.Generic;
+using Unity.VisualScripting;
 
 public class MapGenerator : MonoBehaviour
 {
-    TileData[,] testData;
-    SpriteRenderer[,] tileObjects;
+    TileData[,] testTile;
+    TileData[,] testOre;
     [SerializeField] private GameObject testWater; // 타일 프리팹
     [SerializeField] private GameObject testSand; // 타일 프리팹
 
-    [SerializeField] private Vector2Int size; // 타일 프리팹
+    [SerializeField] private Vector2Int size; // 타일 
+    [SerializeField] private Vector2Int curPos;
 
     void Start()
     {
-        tileObjects = new SpriteRenderer[chunkSize * size.x, chunkSize * size.y];
+        testTile = new TileData[chunkSize * size.x, chunkSize * size.y];
+        //testOre = new TileData[chunkSize * size.x, chunkSize * size.y];
 
         for (int i = 0; i < size.x; i++)
         {
             for (int j = 0; j < size.y; j++)
             {
-                testData = GenerateChunkData(new Vector2Int(i, j));
+                GenerateChunkData(new Vector2Int(i, j));
             }
         }
+        //testData = GenerateChunkData(curPos);
     }
 
     void Update()
     {
-        for (int i = 0; i < size.x; i++)
-        {
-            for (int j = 0; j < size.y; j++)
-            {
-                ReColor(new Vector2Int(i, j));
-            }
-        }
+        //if(Input.GetKeyDown(KeyCode.Tab)) testData = GenerateChunkData(curPos);
 
         if (Input.GetKeyDown(KeyCode.Q)) noiseScale += 10f;
         if (Input.GetKeyDown(KeyCode.W)) noiseScale -= 10f;
@@ -46,6 +45,17 @@ public class MapGenerator : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.I)) noiseLacunarity -= 0.5f;
 
         if (Input.GetKeyDown(KeyCode.Space)) mapSeed = UnityEngine.Random.Range(0f, 99999f);
+
+        if (Input.anyKeyDown)
+        {
+            for (int i = 0; i < size.x; i++)
+            {
+                for (int j = 0; j < size.y; j++)
+                {
+                    ReColor(new Vector2Int(i, j));
+                }
+            }
+        }
     }
     [Header("Terrain Settings")]
     public float terrainScale = 50f;
@@ -81,13 +91,9 @@ public class MapGenerator : MonoBehaviour
 
                 float currentHeight = NoiseGenerator.GenerateFbmNoise
                 (worldX, worldY, noiseScale, noiseOctaves, noisePersistence, noiseLacunarity, mapSeed);
-
                 TerrainType currentTerrain = DetermineTerrainType(currentHeight);
-                float oreDensity = ResourceGenerator.GenerateCellularNoise(worldX, worldY, oreScale, mapSeed);
-                float edgeNoise = noise.snoise(new float2(worldX / 10f, worldY / 10f)) * 0.5f + 0.5f;
-                float finalOreValue = oreDensity * Mathf.Lerp(1f, edgeNoise, oreNoiseBlend);
 
-                tileObjects[(int)worldX, (int)worldY].color = currentTerrain switch
+                testTile[(int)worldX, (int)worldY].sprite.color = currentTerrain switch
                 {
                     TerrainType.DeepWater => Color.blue,
                     TerrainType.ShallowWater => Color.cyan,
@@ -97,11 +103,18 @@ public class MapGenerator : MonoBehaviour
                     _ => throw new System.NotImplementedException()
                 };
 
+                (float finalOreValue, int oreIndex) = OreValue(worldX, worldY);
                 if (currentHeight > 0.45f) // 평지나 숲인 경우에만 자원 생성
                 {
                     if (finalOreValue > oreThreshold)
                     {
-                        tileObjects[(int)worldX, (int)worldY].color = Color.red; // 자원이 있는 타일은 빨간색으로 표시 (테스트용)
+                        testTile[(int)worldX, (int)worldY].sprite.color = oreIndex switch
+                        {
+                            0 => Color.red, // 철
+                            1 => Color.magenta, // 금
+                            2 => Color.black, // 석탄
+                            _ => Color.white
+                        };
                     }
                 }
             }
@@ -129,15 +142,6 @@ public class MapGenerator : MonoBehaviour
                 float currentHeight = NoiseGenerator.GenerateFbmNoise
                 (worldX, worldY, noiseScale, noiseOctaves, noisePersistence, noiseLacunarity, mapSeed);
 
-                //자원 군락 밀집도
-                float oreDensity = ResourceGenerator.GenerateCellularNoise(worldX, worldY, oreScale, mapSeed);
-
-                //자원 군락 테두리 거칠게 깎기
-                float edgeNoise = noise.snoise(new float2(worldX / 10f, worldY / 10f)) * 0.5f + 0.5f;
-
-                // 최종 자원 수치 = 셀룰러 덩어리 * 심플렉스 깎아내기 * 블렌드 가중치
-                float finalOreValue = oreDensity * Mathf.Lerp(1f, edgeNoise, oreNoiseBlend);
-
                 // 노이즈 값에 따라 지형 결정
                 TerrainType currentTerrain = DetermineTerrainType(currentHeight);
 
@@ -149,12 +153,12 @@ public class MapGenerator : MonoBehaviour
                 };
                 //Debug.Log($"Tile at ({x}, {y}): {currentTerrain}, Height: {currentHeight} / World Pos: ({worldX}, {worldY})");
 
-                if (tileObjects[(int)worldX, (int)worldY] == null)
+                if (testTile[(int)worldX, (int)worldY].sprite == null)
                 {
-                    tileObjects[(int)worldX, (int)worldY] = Instantiate(testSand, new Vector3(worldX, worldY, 0), Quaternion.identity, this.transform).GetComponent<SpriteRenderer>();
+                    testTile[(int)worldX, (int)worldY].sprite = Instantiate(testSand, new Vector3(worldX, worldY, 0), Quaternion.identity, this.transform).GetComponent<SpriteRenderer>();
                 }
 
-                tileObjects[(int)worldX, (int)worldY].color = currentTerrain switch
+                testTile[(int)worldX, (int)worldY].sprite.color = currentTerrain switch
                 {
                     TerrainType.DeepWater => Color.blue,
                     TerrainType.ShallowWater => Color.cyan,
@@ -164,26 +168,103 @@ public class MapGenerator : MonoBehaviour
                     _ => throw new System.NotImplementedException()
                 };
 
+
+                (float finalOreValue, int oreIndex) = OreValue(worldX, worldY);
                 if (currentHeight > 0.45f) // 평지나 숲인 경우에만 자원 생성
                 {
                     if (finalOreValue > oreThreshold)
                     {
-                        tileObjects[(int)worldX, (int)worldY].color = Color.red; // 자원이 있는 타일은 빨간색으로 표시 (테스트용)
+                        testTile[(int)worldX, (int)worldY].sprite = Instantiate(testSand, new Vector3(worldX, worldY, -(oreIndex + 1)), Quaternion.identity, this.transform).GetComponent<SpriteRenderer>();
+                        testTile[(int)worldX, (int)worldY].sprite.color = oreIndex switch
+                        {
+                            0 => Color.red, // 철
+                            1 => Color.magenta, // 금
+                            2 => Color.black, // 석탄
+                            _ => Color.white
+                        };
                     }
                 }
+
+                // 광석을 겹침처리와 상관없이 전부 생성 
+                // float finalOreValue = 0;
+                // int oreIndex = 0;
+                // for (int i = 0; i < 3; i++)
+                // {
+                //     float currentValue = GenerateCellularNoise(worldX, worldY, oreScale, mapSeed + i);
+                //     if (currentValue > finalOreValue)
+                //     {
+                //         finalOreValue = currentValue;
+                //         oreIndex = i;
+                //     }
+
+                //     if (currentHeight > 0.45f) // 평지나 숲인 경우에만 자원 생성
+                //     {
+                //         if (finalOreValue > oreThreshold)
+                //         {
+                //             SpriteRenderer oreSprite = Instantiate(testSand, new Vector3(worldX, worldY, -(oreIndex + 1)), Quaternion.identity, this.transform).GetComponent<SpriteRenderer>();
+                //             oreSprite.color = oreIndex switch
+                //             {
+                //                 0 => Color.red, // 철
+                //                 1 => Color.magenta, // 금
+                //                 2 => Color.black, // 석탄
+                //                 _ => Color.white
+                //             };
+                //         }
+                //     }
+                // }
             }
         }
 
         return chunkTiles;
     }
 
+    // 셀룰러 노이즈로 자원의 밀집도(0 ~ 1)를 반환하는 함수
+    private float GenerateCellularNoise(float xPosition, float yPosition, float scale, float seedOffset)
+    {
+        // 0으로 나누기 방지
+        if (scale <= 0) scale = 0.0001f;
+
+        float2 samplePosition = new(xPosition / scale + seedOffset, yPosition / scale + seedOffset);
+
+        // noise.cellular는 float2를 반환합니다. 
+        // x값: 가장 가까운 점까지의 거리 (F1)
+        // y값: 두 번째로 가까운 점까지의 거리 (F2)
+        float2 cellularResult = noise.cellular(samplePosition);
+
+        // 중심점에 가까울수록 거리가 0이 나오므로, 값을 반전시켜 중심이 1(가장 진함)이 되도록 합니다.
+        float invertedDistance = 1f - cellularResult.x;
+
+        //자원 군락 밀집도
+        // 0 ~ 1 사이의 값으로 보정 (math.saturate는 Mathf.Clamp01과 동일)
+        float oreDensity = math.saturate(invertedDistance);
+
+        //자원 군락 테두리 거칠게 깎기
+        float edgeNoise = noise.snoise(new float2(xPosition / 10f, yPosition / 10f)) * 0.5f + 0.5f;
+
+        // 최종 자원 수치 = 셀룰러 덩어리 * 심플렉스 깎아내기 * 블렌드 가중치
+        return oreDensity * Mathf.Lerp(1f, edgeNoise, oreNoiseBlend);
+    }
+
+    private (float finalOreValue, int oreIndex) OreValue(float xPosition, float yPosition)
+    {
+        float maxOreValue = 0;
+        int bestOreIndex = 0;
+
+        for (int i = 0; i < 3; i++)
+        {
+            float currentValue = GenerateCellularNoise(xPosition, yPosition, oreScale, mapSeed + i);
+            if (currentValue > maxOreValue) { maxOreValue = currentValue; bestOreIndex = i; }
+        }
+        return (maxOreValue, bestOreIndex);
+    }
+
     // 임계값(Threshold)을 기반으로 지형을 판별하는 함수
     private TerrainType DetermineTerrainType(float noiseHeight)
     {
-        if (noiseHeight < 0.3f) return TerrainType.DeepWater;
-        if (noiseHeight < 0.4f) return TerrainType.ShallowWater;
-        if (noiseHeight < 0.45f) return TerrainType.Sand;
-        if (noiseHeight < 0.75f) return TerrainType.Grass;
+        if (noiseHeight < 0.2f) return TerrainType.DeepWater;
+        if (noiseHeight < 0.3f) return TerrainType.ShallowWater;
+        if (noiseHeight < 0.35f) return TerrainType.Sand;
+        if (noiseHeight < 0.65f) return TerrainType.Grass;
         return TerrainType.Forest;
     }
 }
@@ -206,8 +287,8 @@ public static class NoiseGenerator
         for (int i = 0; i < octaves; i++)
         {
             // 노이즈의 샘플링 좌표 계산 (시드값과 주파수 적용)
-            float sampleX = (xPosition / scale) * frequency + seedOffset;
-            float sampleY = (yPosition / scale) * frequency + seedOffset;
+            float sampleX = xPosition / scale * frequency + seedOffset;
+            float sampleY = yPosition / scale * frequency + seedOffset;
 
             // Unity.Mathematics의 2D Simplex Noise 호출 (결과값은 대략 -1 ~ 1)
             float noiseValue = noise.snoise(new float2(sampleX, sampleY));
@@ -289,23 +370,5 @@ public class ChunkGenerator
 
 public static class ResourceGenerator
 {
-    // 셀룰러 노이즈로 자원의 밀집도(0 ~ 1)를 반환하는 함수
-    public static float GenerateCellularNoise(float xPosition, float yPosition, float scale, float seedOffset)
-    {
-        // 0으로 나누기 방지
-        if (scale <= 0) scale = 0.0001f;
 
-        float2 samplePosition = new(xPosition / scale + seedOffset, yPosition / scale + seedOffset);
-
-        // noise.cellular는 float2를 반환합니다. 
-        // x값: 가장 가까운 점까지의 거리 (F1)
-        // y값: 두 번째로 가까운 점까지의 거리 (F2)
-        float2 cellularResult = noise.cellular(samplePosition);
-
-        // 중심점에 가까울수록 거리가 0이 나오므로, 값을 반전시켜 중심이 1(가장 진함)이 되도록 합니다.
-        float invertedDistance = 1f - cellularResult.x;
-
-        // 0 ~ 1 사이의 값으로 보정 (math.saturate는 Mathf.Clamp01과 동일)
-        return math.saturate(invertedDistance);
-    }
 }
