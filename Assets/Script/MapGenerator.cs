@@ -44,6 +44,12 @@ public class MapGenerator : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.U)) noiseLacunarity += 0.5f;
         if (Input.GetKeyDown(KeyCode.I)) noiseLacunarity -= 0.5f;
 
+        if (Input.GetKeyDown(KeyCode.G)) oreScale += 5f;
+        if (Input.GetKeyDown(KeyCode.H)) oreScale -= 5f;
+
+        if (Input.GetKeyDown(KeyCode.J)) oreThreshold += 0.05f;
+        if (Input.GetKeyDown(KeyCode.K)) oreThreshold -= 0.05f;
+
         if (Input.GetKeyDown(KeyCode.Space)) mapSeed = UnityEngine.Random.Range(0f, 99999f);
 
         if (Input.anyKeyDown)
@@ -116,7 +122,9 @@ public class MapGenerator : MonoBehaviour
                             _ => Color.white
                         };
                     }
+                    else testTile[(int)worldX, (int)worldY].sprite.color = new Color(0, 0, 0, 0);
                 }
+                else testTile[(int)worldX, (int)worldY].sprite.color = new Color(0, 0, 0, 0);
             }
         }
     }
@@ -157,6 +165,8 @@ public class MapGenerator : MonoBehaviour
                 {
                     testTile[(int)worldX, (int)worldY].sprite = Instantiate(testSand, new Vector3(worldX, worldY, 0), Quaternion.identity, this.transform).GetComponent<SpriteRenderer>();
                 }
+
+                //testTile[(int)worldX, (int)worldY].sprite.color = new Color(0, 0, 0, 0);
 
                 testTile[(int)worldX, (int)worldY].sprite.color = currentTerrain switch
                 {
