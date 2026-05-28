@@ -67,7 +67,7 @@ public class MapVisualizer : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.W)) { noiseScale -= 10f; needsUpdate = true; }
         if (Input.GetKeyDown(KeyCode.E)) { noiseOctaves += 1; needsUpdate = true; }
         if (Input.GetKeyDown(KeyCode.R)) { noiseOctaves -= 1; needsUpdate = true; }
-        if (Input.GetKeyDown(KeyCode.Space)) { mapSeed = UnityEngine.Random.Range(0f, 99999f); needsUpdate = true; }
+        if (Input.GetKeyDown(KeyCode.Space)) {  needsUpdate = true; } //mapSeed = UnityEngine.Random.Range(0f, 99999f);
 
         if (needsUpdate)
         {
@@ -117,8 +117,8 @@ public class MapVisualizer : MonoBehaviour
                         // testTile 배열 저장 (데이터 로직)
                         testTile[texX, texY] = new TileData { terrain = type, heightValue = height };
 
-                        (float oreVal, int oreIdx) = OreValue(sampleX, sampleY);
-                        if (height > 0.45f && oreVal > oreThreshold) pixelColor = GetOreColor(oreIdx);
+                        // (float oreVal, int oreIdx) = OreValue(sampleX, sampleY);
+                        // if (height > 0.45f && oreVal > oreThreshold) pixelColor = GetOreColor(oreIdx);
 
                         // SetPixel 대신 1차원 배열 인덱스에 색상 저장 (매우 빠름)
                         int arrayIndex = texY * totalWidth + texX;
@@ -137,11 +137,11 @@ public class MapVisualizer : MonoBehaviour
 
     // --- 이하 보조 함수 (이전과 완전히 동일) ---
     private Color GetTerrainColor(TerrainType type) => type switch {
-        TerrainType.DeepWater => Color.blue, TerrainType.ShallowWater => Color.cyan,
-        TerrainType.Sand => Color.yellow, TerrainType.Grass => Color.gray,
-        TerrainType.Forest => Color.green, _ => Color.black
+        TerrainType.DeepWater => new Color32(0,110,255,255), TerrainType.ShallowWater => new Color32(0,160,255,255),
+        TerrainType.Sand => Color.yellow, TerrainType.Grass => new Color32(234,197,75,255),
+        TerrainType.Forest => new Color32(0,198,35,255), _ => Color.black
     };
-    private Color GetOreColor(int idx) => idx switch { 0 => Color.red, 1 => Color.magenta, 2 => Color.black, _ => Color.white };
+    private Color GetOreColor(int idx) => idx switch { 0 => new Color32(225,119, 52,255), 1 => new Color32(207,207,207,255), 2 => new Color32(65,65,65,255), _ => Color.white };
     
     private float GenerateCellularNoise(float x, float y, float sc, float seed) {
         float2 pos = new(x / sc + seed, y / sc + seed);
@@ -161,7 +161,7 @@ public class MapVisualizer : MonoBehaviour
     
     private TerrainType DetermineTerrainType(float h) {
         if (h < 0.2f) return TerrainType.DeepWater; if (h < 0.3f) return TerrainType.ShallowWater;
-        if (h < 0.35f) return TerrainType.Sand; if (h < 0.65f) return TerrainType.Grass;
+        if (h < 0.35f) return TerrainType.Sand; if (h < 0.60f) return TerrainType.Grass;
         return TerrainType.Forest;
     }
 }

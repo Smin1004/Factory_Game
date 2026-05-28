@@ -18,19 +18,19 @@ public class MapGenerator : MonoBehaviour
         testTile = new TileData[chunkSize * size.x, chunkSize * size.y];
         //testOre = new TileData[chunkSize * size.x, chunkSize * size.y];
 
-        for (int i = 0; i < size.x; i++)
-        {
-            for (int j = 0; j < size.y; j++)
-            {
-                GenerateChunkData(new Vector2Int(i, j));
-            }
-        }
-        //testData = GenerateChunkData(curPos);
+        // for (int i = 0; i < size.x; i++)
+        // {
+        //     for (int j = 0; j < size.y; j++)
+        //     {
+        //         GenerateChunkData(new Vector2Int(i, j));
+        //     }
+        // }
+        GenerateChunkData(curPos);
     }
 
     void Update()
     {
-        //if(Input.GetKeyDown(KeyCode.Tab)) testData = GenerateChunkData(curPos);
+        if(Input.GetKeyDown(KeyCode.Tab)) GenerateChunkData(curPos);
 
         if (Input.GetKeyDown(KeyCode.Q)) noiseScale += 10f;
         if (Input.GetKeyDown(KeyCode.W)) noiseScale -= 10f;
@@ -52,13 +52,13 @@ public class MapGenerator : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Space)) mapSeed = UnityEngine.Random.Range(0f, 99999f);
 
-        if (Input.anyKeyDown)
+        if (Input.GetKeyDown(KeyCode.L))
         {
             for (int i = 0; i < size.x; i++)
             {
                 for (int j = 0; j < size.y; j++)
                 {
-                    ReColor(new Vector2Int(i, j));
+                    GenerateChunkData(new Vector2Int(i, j));
                 }
             }
         }
@@ -170,12 +170,9 @@ public class MapGenerator : MonoBehaviour
 
                 testTile[(int)worldX, (int)worldY].sprite.color = currentTerrain switch
                 {
-                    TerrainType.DeepWater => Color.blue,
-                    TerrainType.ShallowWater => Color.cyan,
-                    TerrainType.Sand => Color.yellow,
-                    TerrainType.Grass => Color.gray,
-                    TerrainType.Forest => Color.green,
-                    _ => throw new System.NotImplementedException()
+                    TerrainType.DeepWater => new Color32(0,110,255,255), TerrainType.ShallowWater => new Color32(0,160,255,255),
+        TerrainType.Sand => Color.yellow, TerrainType.Grass => new Color32(234,197,75,255),
+        TerrainType.Forest => new Color32(0,198,35,255), _ => Color.black
                 };
 
 
@@ -187,10 +184,7 @@ public class MapGenerator : MonoBehaviour
                         testTile[(int)worldX, (int)worldY].sprite = Instantiate(testSand, new Vector3(worldX, worldY, -(oreIndex + 1)), Quaternion.identity, this.transform).GetComponent<SpriteRenderer>();
                         testTile[(int)worldX, (int)worldY].sprite.color = oreIndex switch
                         {
-                            0 => Color.red, // 철
-                            1 => Color.magenta, // 금
-                            2 => Color.black, // 석탄
-                            _ => Color.white
+                            0 => new Color32(225,119, 52,255), 1 => new Color32(207,207,207,255), 2 => new Color32(65,65,65,255), _ => Color.white
                         };
                     }
                 }

@@ -221,7 +221,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1092801993
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -309,7 +309,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 50
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -436,7 +436,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1397450323
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -450,7 +450,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mapRenderer: {fileID: 1397450324}
-  size: {x: 20, y: 20}
+  size: {x: 10, y: 10}
   noiseScale: 50
   noiseOctaves: 4
   noisePersistence: 0.5
@@ -546,7 +546,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1446466573
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -561,7 +561,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   testWater: {fileID: 7348611945995977638, guid: 2703d667e15c11f4386eaed91b2df28a, type: 3}
   testSand: {fileID: 6959237267639690489, guid: 0829d1daf85be6040bd62170ca81db05, type: 3}
-  size: {x: 5, y: 5}
+  size: {x: 6, y: 6}
   curPos: {x: 0, y: 0}
   terrainScale: 50
   noiseScale: 50
